@@ -1,12 +1,14 @@
   
-async function fetchParks() {
-  try {
-    const res = await fetch('/api/nps'); // call the serverless function
+async function fetchParks(){
+  // prefer search endpoint when searching live, otherwise return static list
+  try{
+    const res = await fetch('/api/parks');
+    if(res.ok) return await res.json();
+  }catch(e){ }
+  try{
+    const res = await fetch('/data/parks.json');
     return await res.json();
-  } catch (e) {
-    console.error(e);
-    return [];
-  }
+  }catch(e){ return [] }
 }
 
 // --- lightweight WebAudio ambient engine (no external files) ---
@@ -1083,7 +1085,7 @@ setTimeout(checkNpsStatus, 800);
       const chosen = acts[idx];
       const challengeEl = document.getElementById('challengeContent');
       if (challengeEl) challengeEl.textContent = chosen.title + ' — ' + chosen.description;
-      // set current activity for packing to the challenge (packing still available via challenge)
+      // set current activity for packing and render interactive checklist (persisted in localStorage)
       _currentPackingActivity = chosen.id || `challenge-${idx}`;
       renderPacking(_currentPackingActivity, chosen.packing || []);
     }
