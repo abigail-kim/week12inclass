@@ -1,14 +1,11 @@
   
 async function fetchParks(){
-  // prefer search endpoint when searching live, otherwise return static list
-  try{
-    const res = await fetch('/api/parks');
-    if(res.ok) return await res.json();
-  }catch(e){ }
+  // Load parks only from the local data file. Live NPS API is ignored.
   try{
     const res = await fetch('/data/parks.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     return await res.json();
-  }catch(e){ return [] }
+  }catch(e){ console.warn('Failed to load local parks.json', e); return []; }
 }
 
 // --- lightweight WebAudio ambient engine (no external files) ---
@@ -1113,11 +1110,12 @@ setTimeout(checkNpsStatus, 800);
 
 // fetch activities and show a daily challenge
 ;(async function(){
+  // Load activities from local file and ignore live API
   try{
-    const res = await fetch('/api/activities');
-    if(!res.ok) throw new Error('no activities');
-    const acts = await res.json();
-    if(acts && acts.length){
+    const actsRes = await fetch('/data/activities.json');
+    if (!actsRes.ok) throw new Error('HTTP ' + actsRes.status);
+    const acts = await actsRes.json();
+    if (acts && acts.length){
       const idx = new Date().getDate() % acts.length;
       const chosen = acts[idx];
       const challengeEl = document.getElementById('challengeContent');
@@ -1135,7 +1133,7 @@ setTimeout(checkNpsStatus, 800);
             li.textContent = a.title; li.title = a.description || '';
             li.addEventListener('click', ()=>{
               _currentPackingActivity = a.id || ('activity-'+a.id);
-              document.getElementById('packingName').textContent = a.title || a.id;
+              const pn = document.getElementById('packingName'); if (pn) pn.textContent = a.title || a.id;
               renderPacking(_currentPackingActivity, a.packing || []);
             });
             actListEl.appendChild(li);
