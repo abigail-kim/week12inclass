@@ -987,17 +987,47 @@ function loadVisit(parkId){ try{ return JSON.parse(localStorage.getItem(visitKey
 function saveVisit(parkId,obj){ localStorage.setItem(visitKey(parkId), JSON.stringify(obj)) }
 
 (async ()=>{
-  let parks = await fetchParks();
-  // defensive fallback: if fetchParks returned nothing, try loading the local data file directly
-  if (!parks || !Array.isArray(parks) || parks.length === 0){
+  async function loadLocalParks(){
     try{
       const res = await fetch('/data/parks.json');
-      if (res.ok) parks = await res.json();
-    }catch(e){ console.warn('fallback load of /data/parks.json failed', e); }
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      return data;
+    }catch(e){
+      console.warn('local parks load failed', e);
+      const el = document.getElementById('parks'); if (el) el.innerHTML = '<li style="opacity:.8">Failed to load parks data.</li>';
+      return [];
+    }
   }
+
+  async function loadLocalActivities(){
+    try{
+      const res = await fetch('/data/activities.json');
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      return data;
+    }catch(e){
+      console.warn('local activities load failed', e);
+      const el = document.getElementById('activities'); if (el) el.innerHTML = '<li style="opacity:.8">Failed to load activities.</li>';
+      return [];
+    }
+  }
+
+  let parks = await fetchParks();
+  // defensive fallback: if fetchParks returned nothing, try loading the local data file directly
+  if (!parks || !Array.isArray(parks) || parks.length === 0){ parks = await loadLocalParks(); }
   // keep parks available globally so UI can refresh when favorites change
   try{ window._parks = parks }catch(e){}
   renderList(parks);
+  // ensure activities list is populated from local data if API not available
+  try{
+    let acts = [];
+    try{ const res = await fetch('/api/activities'); if (res.ok) acts = await res.json(); }catch(e){}
+    if (!acts || !acts.length) acts = await loadLocalActivities();
+    // render activities into DOM if element exists
+    const actListEl = document.getElementById('activities');
+    if (actListEl){ actListEl.innerHTML = ''; acts.forEach(a=>{ const li = document.createElement('li'); li.style.marginBottom='.5rem'; li.style.cursor='pointer'; li.textContent = a.title; li.title = a.description || ''; li.addEventListener('click', ()=>{ _currentPackingActivity = a.id || ('activity-'+a.id); document.getElementById('packingName').textContent = a.title || a.id; renderPacking(_currentPackingActivity, a.packing || []); }); actListEl.appendChild(li); }); }
+  }catch(e){ console.warn('activities render failed', e); }
   const search = document.getElementById('search');
   const useNps = document.getElementById('useNps');
 
