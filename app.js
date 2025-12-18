@@ -1,10 +1,11 @@
   
-async function fetchParks(){
-  try{
-    const res = await fetch('/data/parks.json'); // always use static JSON
+async function fetchParks() {
+  try {
+    const res = await fetch('/api/nps'); // call the serverless function
     return await res.json();
-  }catch(e){ 
-    return [] 
+  } catch (e) {
+    console.error(e);
+    return [];
   }
 }
 
