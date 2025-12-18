@@ -1,4 +1,4 @@
-# National Parks
+# U.S. National Parks
 
 This web application allows you to browse a small sample of national parks from the National Park Service API.
 
